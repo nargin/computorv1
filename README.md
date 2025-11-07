@@ -2,7 +2,22 @@
 
 A quadratic equation solver written in Zig.
 
-## Building
+## Quick Start
+
+The compiled binary is included in the repo:
+
+```bash
+./computor "5 * X^2 + 3 * X + 2 = 1 + X"
+```
+
+## Building from Source
+
+Install Zig 0.15.2 from:
+https://ziglang.org/download/0.15.2/zig-0.15.2.tar.xz
+
+> **Note:** This specific version is required due to breaking changes in the Zig language. Since Zig is still in development, language features and APIs change frequently between versions.
+
+Then build with:
 
 ```bash
 zig build
@@ -14,20 +29,11 @@ zig build
 zig build test
 ```
 
-## Running
+## Usage
 
 ```bash
 ./computor "equation"
 ```
-
-Example:
-```bash
-./computor "5 * X^2 + 3 * X + 2 = 1 + X"
-```
-
-## Requirements
-
-- Zig compiler
 
 ## License
 
