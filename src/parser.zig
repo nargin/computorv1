@@ -6,12 +6,22 @@ const allocator = std.heap.page_allocator;
 /// Take program arguments as input and return an array of coefficients for X^0 to X^10
 pub fn strict_parser(args: []const []const u8) ![11]f64 {
     const args_len = args.len;
+    var equation: []const u8 = undefined;
 
-    if (args_len < 2) {
-        return error.InsufficientArguments;
+    if (args_len == 1) {
+        equation = helpers.getUserInput() catch |err| {
+            std.debug.print("Error reading user input: {}\n", .{err});
+            return err;
+        };
     }
 
-    const equation = try helpers.removeWhitespace(args[1], allocator);
+    if (args_len > 2) {
+        return error.TooManyArguments;
+    } else {
+        equation = args[1];
+    }
+
+    try helpers.removeWhitespace(&equation, allocator);
 
     // Check for invalid characters
     for (equation, 0..) |c, i| {

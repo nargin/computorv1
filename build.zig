@@ -13,7 +13,9 @@ pub fn build(b: *std.Build) void {
         }),
     });
 
-    b.installArtifact(exe);
+    // Install to root directory
+    const install_exe = b.addInstallFile(exe.getEmittedBin(), "../computor");
+    b.getInstallStep().dependOn(&install_exe.step);
 
     const run_cmd = b.addRunArtifact(exe);
     run_cmd.step.dependOn(b.getInstallStep());

@@ -24,8 +24,9 @@ pub fn isValidCoeff(c: u8) bool {
 
 // String utilities
 
-pub fn removeWhitespace(s: []const u8, allocator: std.mem.Allocator) ![]u8 {
+pub fn removeWhitespace(s: *[]const u8, allocator: std.mem.Allocator) !void {
     var cleaned = try allocator.alloc(u8, s.len);
+    defer allocator.free(cleaned);
     var index: usize = 0;
 
     for (s) |c| {
@@ -34,7 +35,7 @@ pub fn removeWhitespace(s: []const u8, allocator: std.mem.Allocator) ![]u8 {
             index += 1;
         }
     }
-    return cleaned[0..index];
+    s.* = cleaned[0..index];
 }
 
 // Error display functions
@@ -57,4 +58,18 @@ pub fn printInvalidCharError(text: []const u8, position: usize, char: u8) void {
         std.debug.print("Invalid character at position {d}: (non-ASCII byte 0x{x})\n", .{ position, char });
     }
     printErrorAt(text, position);
+}
+
+pub fn getUserInput() ![]const u8 {
+    const allocator = std.heap.page_allocator;
+    const stdin = std.Io.Reader.buffered();
+    const stdout = std.Io.Writer.getStdOut().writer();
+
+    try stdout.print("Enter equation: ", .{});
+
+    // Read until newline, allocates memory dynamically
+    const line = try stdin.readUntilDelimiterAlloc(allocator, '\n', 4096);
+    defer allocator.free(line);
+
+    return line;
 }
