@@ -3,8 +3,8 @@ const helpers = @import("helpers.zig");
 const allocator = std.heap.page_allocator;
 
 /// Strictly parse the command-line arguments to extract polynomial coefficients
-/// Take program arguments as input and return an array of coefficients for X^0, X^1, and X^2
-pub fn strict_parser(args: []const []const u8) ![3]f64 {
+/// Take program arguments as input and return an array of coefficients for X^0 to X^10
+pub fn strict_parser(args: []const []const u8) ![11]f64 {
     const args_len = args.len;
 
     if (args_len < 2) {
@@ -37,20 +37,20 @@ pub fn strict_parser(args: []const []const u8) ![3]f64 {
         right_part = equation[equal_sign_index.? + 1 ..];
     }
 
-    var coefficients = [3]f64{ 0, 0, 0 }; // Coefficients for X^0, X^1, X^2
+    var coefficients = [11]f64{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // Coefficients for X^0 to X^10
 
     extract_coefficients(left_part, &coefficients) catch |err| {
         return err;
     };
 
     if (right_part.len > 0 and std.mem.eql(u8, right_part, "0") == false) {
-        var right_coefficients = [3]f64{ 0, 0, 0 };
+        var right_coefficients = [11]f64{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         extract_coefficients(right_part, &right_coefficients) catch |err| {
             return err;
         };
 
         // Move right side coefficients to left side
-        for (0..3) |i| {
+        for (0..11) |i| {
             coefficients[i] -= right_coefficients[i];
         }
     }
@@ -59,7 +59,7 @@ pub fn strict_parser(args: []const []const u8) ![3]f64 {
 }
 
 /// Extract coefficients from a part of the equation and update the coefficients array
-fn extract_coefficients(part: []const u8, coefficients: *[3]f64) !void {
+fn extract_coefficients(part: []const u8, coefficients: *[11]f64) !void {
     var index: usize = 0;
     const len = part.len;
 
@@ -112,8 +112,6 @@ fn extract_coefficients(part: []const u8, coefficients: *[3]f64) !void {
         index += 1;
 
         // Extract exponent
-        // Calculate exponent even if we don't use it beyond 2
-        // Everything done at the end dont care of performance use
         const exp_start = index;
         while (index < len and helpers.isNumber(part[index])) {
             index += 1;
@@ -127,7 +125,7 @@ fn extract_coefficients(part: []const u8, coefficients: *[3]f64) !void {
             return error.InvalidFormat;
         };
 
-        if (exponent > 2) {
+        if (exponent > 10) {
             return error.ExponentTooHigh;
         }
 

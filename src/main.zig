@@ -29,11 +29,6 @@ pub fn main() !void {
         return err;
     };
 
-    // std.debug.print("Extracted Coefficients:\n", .{});
-    // std.debug.print("  X^0: {d}\n", .{coefficients[0]});
-    // std.debug.print("  X^1: {d}\n", .{coefficients[1]});
-    // std.debug.print("  X^2: {d}\n", .{coefficients[2]});
-
     try quadratic_solver(coefficients);
 }
 
@@ -78,7 +73,7 @@ test "parsing equations" {
             std.debug.print("  ❌ Unexpected Error: {}\n", .{err});
             continue;
         };
-        std.debug.print("  ✓ Coefficients: X^0 = {d}, X^1 = {d}, X^2 = {d}\n", .{ coefficients[0], coefficients[1], coefficients[2] });
+        std.debug.print("  ✓ Parsed successfully\n", .{});
         try quadratic_solver(coefficients);
         std.debug.print("\n", .{});
     }
