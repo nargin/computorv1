@@ -13,26 +13,26 @@ pub fn strict_parser(args: []const []const u8) ![11]f64 {
             std.debug.print("Error reading user input: {}\n", .{err});
             return err;
         };
-    }
-
-    if (args_len > 2) {
-        return error.TooManyArguments;
     } else {
         equation = args[1];
     }
 
-    try helpers.removeWhitespace(&equation, allocator);
+    if (args_len > 2) {
+        return error.TooManyArguments;
+    }
+
+    const parsed = try helpers.removeWhitespace(equation, allocator);
 
     // Check for invalid characters
-    for (equation, 0..) |c, i| {
+    for (parsed, 0..) |c, i| {
         if (!helpers.isEquationChar(c)) {
-            helpers.printInvalidCharError(equation, i, c);
+            helpers.printInvalidCharError(parsed, i, c);
             return error.InvalidCharacter;
         }
     }
 
-    const equal_sign_index = std.mem.indexOf(u8, equation, "=");
-    const last_equal_sign_index = std.mem.lastIndexOf(u8, equation, "=");
+    const equal_sign_index = std.mem.indexOf(u8, parsed, "=");
+    const last_equal_sign_index = std.mem.lastIndexOf(u8, parsed, "=");
     if (equal_sign_index != last_equal_sign_index) {
         return error.MultipleEqualSigns;
     }
@@ -40,11 +40,11 @@ pub fn strict_parser(args: []const []const u8) ![11]f64 {
     var left_part: []const u8 = undefined;
     var right_part: []const u8 = undefined;
     if (equal_sign_index == null) {
-        left_part = equation;
+        left_part = parsed;
         right_part = "0";
     } else {
-        left_part = equation[0..equal_sign_index.?];
-        right_part = equation[equal_sign_index.? + 1 ..];
+        left_part = parsed[0..equal_sign_index.?];
+        right_part = parsed[equal_sign_index.? + 1 ..];
     }
 
     var coefficients = [11]f64{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // Coefficients for X^0 to X^10

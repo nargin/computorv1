@@ -24,9 +24,8 @@ pub fn isValidCoeff(c: u8) bool {
 
 // String utilities
 
-pub fn removeWhitespace(s: *[]const u8, allocator: std.mem.Allocator) !void {
+pub fn removeWhitespace(s: []const u8, allocator: std.mem.Allocator) ![]const u8 {
     var cleaned = try allocator.alloc(u8, s.len);
-    defer allocator.free(cleaned);
     var index: usize = 0;
 
     for (s) |c| {
@@ -35,7 +34,8 @@ pub fn removeWhitespace(s: *[]const u8, allocator: std.mem.Allocator) !void {
             index += 1;
         }
     }
-    s.* = cleaned[0..index];
+
+    return cleaned[0..index];
 }
 
 // Error display functions
@@ -62,14 +62,30 @@ pub fn printInvalidCharError(text: []const u8, position: usize, char: u8) void {
 
 pub fn getUserInput() ![]const u8 {
     const allocator = std.heap.page_allocator;
-    const stdin = std.Io.Reader.buffered();
-    const stdout = std.Io.Writer.getStdOut().writer();
 
-    try stdout.print("Enter equation: ", .{});
+    // Setup stdin with buffer
+    var stdin_buffer: [4096]u8 = undefined;
+    var stdin_reader_wrapper = std.fs.File.stdin().reader(&stdin_buffer);
+    const reader: *std.Io.Reader = &stdin_reader_wrapper.interface;
 
-    // Read until newline, allocates memory dynamically
-    const line = try stdin.readUntilDelimiterAlloc(allocator, '\n', 4096);
-    defer allocator.free(line);
+    // Setup stdout
+    var stdout_buffer: [512]u8 = undefined;
+    var stdout_writer = std.fs.File.stdout().writer(&stdout_buffer);
+    const stdout: *std.Io.Writer = &stdout_writer.interface;
 
-    return line;
+    // Create ArrayList - NOTE: In 0.15+, it's unmanaged by default
+    var input_data: std.ArrayList(u8) = .empty;
+    defer input_data.deinit(allocator);
+
+    try stdout.writeAll("> Enter equation: ");
+    try stdout.flush();
+
+    // Read until delimiter and append to ArrayList
+    // takeDelimiterExclusive returns a slice from the internal buffer
+    const line = try reader.takeDelimiterExclusive('\n');
+
+    // Copy the line data into the ArrayList
+    try input_data.appendSlice(allocator, line);
+
+    return input_data.toOwnedSlice(allocator);
 }

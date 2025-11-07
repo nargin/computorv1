@@ -83,7 +83,7 @@ pub fn quadratic_solver(coefficients: [11]f64) !void {
     // Degree 1 (linear)
     if (a == 0) {
         const solution = -c / b; //
-        std.debug.print("The solution is:\n{d}\n", .{solution});
+        std.debug.print("The solution is: x = {d:.3}\n", .{solution});
         return;
     }
 
@@ -95,15 +95,15 @@ pub fn quadratic_solver(coefficients: [11]f64) !void {
         std.debug.print("Discriminant is strictly positive, the two solutions are:\n", .{});
         const root1 = (-b + std.math.sqrt(discriminant)) / (2 * a);
         const root2 = (-b - std.math.sqrt(discriminant)) / (2 * a);
-        std.debug.print("{d}\n{d}\n", .{ root1, root2 });
+        std.debug.print("x1 = {d:.3} and x2 = {d:.3}\n", .{ root1, root2 });
     } else if (discriminant == 0) {
         std.debug.print("Discriminant is zero, the solution is:\n", .{});
         const root = -b / (2 * a);
-        std.debug.print("{d}\n", .{root});
+        std.debug.print("x1 = x2 = {d:.3}\n", .{root});
     } else {
         std.debug.print("Discriminant is strictly negative, the two complex solutions are:\n", .{});
         const realPart = -b / (2 * a);
         const imagPart = std.math.sqrt(-discriminant) / (2 * a);
-        std.debug.print("{d} + {d}i\n{d} - {d}i\n", .{ realPart, imagPart, realPart, imagPart });
+        std.debug.print("x1 = {d:.3} + {d:.3}i and x2 = {d:.3} - {d:.3}i\n", .{ realPart, imagPart, realPart, imagPart });
     }
 }
