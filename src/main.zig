@@ -1,10 +1,12 @@
 const std = @import("std");
 const expect = std.testing.expect;
+const helpers = @import("helpers.zig");
 const allocator = std.heap.page_allocator;
-const strict_parser = @import("parser.zig").strict_parser;
+const parser = @import("parser.zig").parser;
+const ParserType = @import("parser.zig").ParserType;
 const quadratic_solver = @import("solver.zig").quadratic_solver;
 
-fn printHelp() void {
+fn print_help() void {
     std.debug.print("Usage: computor <equation>\n\n", .{});
     std.debug.print("Solves polynomial equations up to degree 2.\n", .{});
     std.debug.print("Format: <left side> = <right side>\n\n", .{});
@@ -24,7 +26,16 @@ pub fn main() !void {
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
-    const coefficients = strict_parser(args) catch |err| {
+    var equation: []const u8 = undefined;
+
+    equation = helpers.validateArgs(args) catch |err| {
+        if (err == error.TooManyArguments) {
+            print_help();
+        }
+        return err;
+    };
+
+    const coefficients = parser(.Strict, equation) catch |err| {
         std.debug.print("Error: {}\n", .{err});
         return err;
     };
@@ -68,8 +79,9 @@ test "parsing equations" {
     std.debug.print("=== GOOD EQUATIONS (should parse) ===\n\n", .{});
     for (good_equations, 0..) |eq, i| {
         std.debug.print("Good Test {d}: {s}\n", .{ i + 1, eq });
-        var args = [_][]const u8{ "computor", eq };
-        const coefficients = strict_parser(&args) catch |err| {
+        const args = [_][]const u8{ "computor", eq };
+        const equation = args[1];
+        const coefficients = parser(.Strict, equation) catch |err| {
             std.debug.print("  ❌ Unexpected Error: {}\n", .{err});
             continue;
         };
@@ -81,8 +93,9 @@ test "parsing equations" {
     std.debug.print("\n=== BAD EQUATIONS (should fail) ===\n\n", .{});
     for (bad_equations, 0..) |eq, i| {
         std.debug.print("Bad Test {d}: {s}\n", .{ i + 1, eq });
-        var args = [_][]const u8{ "computor", eq };
-        _ = strict_parser(&args) catch |err| {
+        const args = [_][]const u8{ "computor", eq };
+        const equation = args[1];
+        _ = parser(.Strict, equation) catch |err| {
             std.debug.print("  ✓ Expected Error: {}\n", .{err});
             continue;
         };

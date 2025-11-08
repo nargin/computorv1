@@ -2,30 +2,40 @@ const std = @import("std");
 const helpers = @import("helpers.zig");
 const allocator = std.heap.page_allocator;
 
+pub const ParserType = enum { Strict, NoComplexity, Simplifier };
+
+pub fn parser(parser_type: ParserType, equation: []const u8) ![11]f64 {
+    switch (parser_type) {
+        ParserType.Strict => return strict_parser(equation),
+        ParserType.NoComplexity => return no_complexity_parser(equation),
+        ParserType.Simplifier => return simplifier_parser(equation),
+    }
+}
+
+/// A very basic parser that does minimal validation
+/// and extracts coefficients without enforcing strict format rules
+fn no_complexity_parser(equation: []const u8) ![11]f64 {
+    // Placeholder for No Complexity parser implementation
+    _ = equation;
+    return error.NotImplemented;
+}
+
+/// Basically no_complexity_parser but allows multiple number of the same degree
+/// and simplifies them by summing their coefficients
+fn simplifier_parser(equation: []const u8) ![11]f64 {
+    // Placeholder for Simplifier parser implementation
+    _ = equation;
+    return error.NotImplemented;
+}
+
 /// Strictly parse the command-line arguments to extract polynomial coefficients
 /// Take program arguments as input and return an array of coefficients for X^0 to X^10
-pub fn strict_parser(args: []const []const u8) ![11]f64 {
-    const args_len = args.len;
-    var equation: []const u8 = undefined;
-
-    if (args_len == 1) {
-        equation = helpers.getUserInput() catch |err| {
-            std.debug.print("Error reading user input: {}\n", .{err});
-            return err;
-        };
-    } else {
-        equation = args[1];
-    }
-
-    if (args_len > 2) {
-        return error.TooManyArguments;
-    }
-
+fn strict_parser(equation: []const u8) ![11]f64 {
     const parsed = try helpers.removeWhitespace(equation, allocator);
 
     // Check for invalid characters
     for (parsed, 0..) |c, i| {
-        if (!helpers.isEquationChar(c)) {
+        if (!helpers.is_equation_char(c)) {
             helpers.printInvalidCharError(parsed, i, c);
             return error.InvalidCharacter;
         }
@@ -85,7 +95,7 @@ fn extract_coefficients(part: []const u8, coefficients: *[11]f64) !void {
 
         // Extract and calculate coefficient
         const coeff_start = index;
-        while (index < len and helpers.isValidCoeff(part[index])) {
+        while (index < len and helpers.is_valid_coeff(part[index])) {
             index += 1;
         }
         var coefficient: f64 = 1.0;
@@ -123,7 +133,7 @@ fn extract_coefficients(part: []const u8, coefficients: *[11]f64) !void {
 
         // Extract exponent
         const exp_start = index;
-        while (index < len and helpers.isNumber(part[index])) {
+        while (index < len and helpers.is_number(part[index])) {
             index += 1;
         }
 
