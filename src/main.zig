@@ -5,6 +5,7 @@ const allocator = std.heap.page_allocator;
 const parser = @import("parser.zig").parser;
 const ParserType = @import("parser.zig").ParserType;
 const quadratic_solver = @import("solver.zig").quadratic_solver;
+const visualizer = @import("visualizer.zig");
 
 fn print_help() void {
     std.debug.print("Usage: computor <equation>\n\n", .{});
@@ -28,7 +29,7 @@ pub fn main() !void {
 
     var equation: []const u8 = undefined;
 
-    equation = helpers.validateArgs(args) catch |err| {
+    equation = helpers.validate_args(args) catch |err| {
         if (err == error.TooManyArguments) {
             print_help();
         }
@@ -41,6 +42,9 @@ pub fn main() !void {
     };
 
     try quadratic_solver(coefficients);
+
+    // Generate visualization
+    try visualizer.generate_visualization(coefficients, allocator);
 }
 
 test "parsing equations" {

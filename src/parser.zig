@@ -31,7 +31,7 @@ fn simplifier_parser(equation: []const u8) ![11]f64 {
 /// Strictly parse the command-line arguments to extract polynomial coefficients
 /// Take program arguments as input and return an array of coefficients for X^0 to X^10
 fn strict_parser(equation: []const u8) ![11]f64 {
-    const parsed = try helpers.removeWhitespace(equation, allocator);
+    const parsed = try helpers.remove_whitespace(equation, allocator);
 
     // Check for invalid characters
     for (parsed, 0..) |c, i| {
@@ -110,7 +110,7 @@ fn extract_coefficients(part: []const u8, coefficients: *[11]f64) !void {
         // Expecting '*'
         if (index >= len or part[index] != '*' and is_coefficient) {
             std.debug.print("Invalid format at position {d}: expected '*'\n", .{index});
-            helpers.printErrorAt(part, index);
+            helpers.print_error_at(part, index);
             return error.InvalidFormat;
         }
         if (is_coefficient) index += 1;
@@ -118,7 +118,7 @@ fn extract_coefficients(part: []const u8, coefficients: *[11]f64) !void {
         // Expecting 'X'
         if (index >= len or part[index] != 'X') {
             std.debug.print("Invalid format at position {d}: expected 'X'\n", .{index});
-            helpers.printErrorAt(part, index);
+            helpers.print_error_at(part, index);
             return error.InvalidFormat;
         }
         index += 1;
@@ -126,7 +126,7 @@ fn extract_coefficients(part: []const u8, coefficients: *[11]f64) !void {
         // Expecting '^'
         if (index >= len or part[index] != '^') {
             std.debug.print("Invalid format at position {d}: expected '^'\n", .{index});
-            helpers.printErrorAt(part, index);
+            helpers.print_error_at(part, index);
             return error.InvalidFormat;
         }
         index += 1;
