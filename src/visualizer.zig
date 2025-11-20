@@ -6,7 +6,9 @@ pub fn generate_visualization(coefficients: [11]f64, _: std.mem.Allocator) !void
     const b = coefficients[1];
     const c = coefficients[0];
 
+    std.debug.print("{}X^2 + {}X + {}\n", .{ a, b, c });
+
     std.debug.print("\nVisualization:\n", .{});
     std.debug.print("Run this command to visualize the graph:\n", .{});
-    std.debug.print("source venv/bin/activate && python3 visualizer.py {d} {d} {d}\n\n", .{ a, b, c });
+    std.debug.print("make bonus ARGS=\"{d} {d} {d}\"\n\n", .{ a, b, c });
 }

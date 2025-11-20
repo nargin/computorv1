@@ -11,10 +11,6 @@ clean:
 	zig build clean
 	rm -rf .zig-cache
 
-# Run the solver with an equation (use: make run ARGS="equation")
-run: build
-	./computor $(ARGS)
-
 # Run tests
 test: build
 	zig build test
@@ -24,7 +20,7 @@ venv:
 	python3 -m venv venv
 	. venv/bin/activate && pip install -r requirements.txt
 
-# Visualize coefficients (use: make bonus ARGS="a b c" or default example)
+# Visualize coefficients using Python script
 bonus: venv
 	. venv/bin/activate && python3 visualizer.py $(ARGS)
 
