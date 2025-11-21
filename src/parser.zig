@@ -7,23 +7,19 @@ pub const ParserType = enum { Strict, Ultra };
 pub fn parser(parser_type: ParserType, equation: []const u8) ![11]f64 {
     switch (parser_type) {
         ParserType.Strict => return strict_parser(equation),
-        ParserType.Ultra => return last_boss_parser(equation),
+        ParserType.Ultra => return final_boss_parser(equation),
     }
 }
 
 /// A very permissive parser
-/// Does not handle Superscript symbols or complex numbers
-fn last_boss_parser(equation: []const u8) ![11]f64 {
-    const parsed = try helpers.remove_whitespace(equation, allocator);
+fn final_boss_parser(equation: []const u8) ![11]f64 {
+    const parsed = try helpers.clean_input(equation, allocator);
 
-    std.debug.print("Last boss parser activated. Parsed equation: {s}\n", .{parsed});
+    std.debug.print("Ultra parser output (not implemented): {s}\n", .{parsed});
 
-    for (parsed, 0..) |c, i| {
-        if (!helpers.is_equation_char(c, "x²")) {
-            helpers.printInvalidCharError(parsed, i, c);
-            return error.InvalidCharacter;
-        }
-    }
+    const parts = try split_equation(parsed);
+
+    _ = parts;
 
     // The parser should parse anything excluding UTF-8 invalid characters
     for (parsed, 0..) |c, i| {
@@ -32,6 +28,30 @@ fn last_boss_parser(equation: []const u8) ![11]f64 {
     }
 
     return [11]f64{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // Dummy return
+}
+
+const EquationParts = struct {
+    left: []const u8,
+    right: []const u8,
+};
+
+/// Split equation into left and right parts around the '=' sign
+fn split_equation(equation: []const u8) !EquationParts {
+    const equal_sign_index = std.mem.indexOf(u8, equation, "=");
+    const last_equal_sign_index = std.mem.lastIndexOf(u8, equation, "=");
+
+    if (equal_sign_index != last_equal_sign_index) {
+        return error.MultipleEqualSigns;
+    }
+
+    if (equal_sign_index == null) {
+        return EquationParts{ .left = equation, .right = "0" };
+    }
+
+    return EquationParts{
+        .left = equation[0..equal_sign_index.?],
+        .right = equation[equal_sign_index.? + 1 ..],
+    };
 }
 
 /// Strictly parse the command-line arguments to extract polynomial coefficients
@@ -47,31 +67,17 @@ fn strict_parser(equation: []const u8) ![11]f64 {
         }
     }
 
-    const equal_sign_index = std.mem.indexOf(u8, parsed, "=");
-    const last_equal_sign_index = std.mem.lastIndexOf(u8, parsed, "=");
-    if (equal_sign_index != last_equal_sign_index) {
-        return error.MultipleEqualSigns;
-    }
-
-    var left_part: []const u8 = undefined;
-    var right_part: []const u8 = undefined;
-    if (equal_sign_index == null) {
-        left_part = parsed;
-        right_part = "0";
-    } else {
-        left_part = parsed[0..equal_sign_index.?];
-        right_part = parsed[equal_sign_index.? + 1 ..];
-    }
+    const parts = try split_equation(parsed);
 
     var coefficients = [11]f64{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // Coefficients for X^0 to X^10
 
-    extract_coefficients(left_part, &coefficients) catch |err| {
+    extract_coefficients(parts.left, &coefficients) catch |err| {
         return err;
     };
 
-    if (right_part.len > 0 and std.mem.eql(u8, right_part, "0") == false) {
+    if (parts.right.len > 0 and std.mem.eql(u8, parts.right, "0") == false) {
         var right_coefficients = [11]f64{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-        extract_coefficients(right_part, &right_coefficients) catch |err| {
+        extract_coefficients(parts.right, &right_coefficients) catch |err| {
             return err;
         };
 

@@ -34,13 +34,14 @@ pub fn main() !void {
         return err;
     };
 
-    const coefficients = parser(.Strict, equation) catch |err| {
+    const coefficients = parser(.Ultra, equation) catch |err| {
         std.debug.print("Error: {}\n", .{err});
         return err;
     };
 
-    try quadratic_solver(coefficients);
+    _ = coefficients;
+    // try quadratic_solver(coefficients);
 
     // Generate visualization
-    try visualizer.generate_visualization(coefficients, allocator);
+    // try visualizer.generate_visualization(coefficients, allocator);
 }

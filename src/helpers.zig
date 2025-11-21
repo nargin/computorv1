@@ -39,6 +39,37 @@ pub fn remove_whitespace(s: []const u8, allocator: std.mem.Allocator) ![]const u
     return cleaned[0..index];
 }
 
+/// Cleans input by removing whitespace and unallowed characters
+/// Will remain permissive only
+/// Not really optimized but works
+pub fn clean_input(s: []const u8, allocator: std.mem.Allocator) ![]const u8 {
+    var validc: usize = 0;
+    for (s) |c| {
+        if (is_equation_char(c, "x²") and !is_whitespace(c)) {
+            validc += 1;
+        }
+    }
+
+    std.debug.print("Valid characters count: {d}\n", .{validc});
+
+    var cleaned = try allocator.alloc(u8, validc + 1);
+    var index: usize = 0;
+    for (s) |c| {
+        if (!is_whitespace(c) and is_equation_char(c, "x²")) {
+            cleaned[index] = c;
+            index += 1;
+        }
+    }
+    cleaned[index] = 0; // Null-terminate for safety
+
+    if (index != validc and cleaned.len != validc) {
+        // Sanity check
+        return error.InternalError;
+    }
+
+    return cleaned;
+}
+
 // Error display functions
 
 pub fn print_error_at(text: []const u8, position: usize) void {
