@@ -1,17 +1,18 @@
 const std = @import("std");
 
-// Character validation functions
+pub fn is_equation_char(c: u8, could_also: ?[]const u8) bool {
+    if (could_also) |extra| {
+        for (extra) |ec| if (c == ec) return true;
+    }
+
+    return switch (c) {
+        '0'...'9', 'X', '.', '+', '-', '*', '/', '^', '=', ' ' => true,
+        else => false,
+    };
+}
 
 pub fn is_number(c: u8) bool {
-    return (c >= '0' and c <= '9');
-}
-
-pub fn is_operator(c: u8) bool {
-    return (c == '+' or c == '-' or c == '*' or c == '/' or c == '^' or c == '=');
-}
-
-pub fn is_equation_char(c: u8) bool {
-    return is_number(c) or (c == '.') or (c == 'X') or is_operator(c) or (c == ' ');
+    return c >= '0' and c <= '9';
 }
 
 pub fn is_whitespace(c: u8) bool {

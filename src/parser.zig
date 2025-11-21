@@ -2,30 +2,36 @@ const std = @import("std");
 const helpers = @import("helpers.zig");
 const allocator = std.heap.page_allocator;
 
-pub const ParserType = enum { Strict, NoComplexity, Simplifier };
+pub const ParserType = enum { Strict, Ultra };
 
 pub fn parser(parser_type: ParserType, equation: []const u8) ![11]f64 {
     switch (parser_type) {
         ParserType.Strict => return strict_parser(equation),
-        ParserType.NoComplexity => return no_complexity_parser(equation),
-        ParserType.Simplifier => return simplifier_parser(equation),
+        ParserType.Ultra => return last_boss_parser(equation),
     }
 }
 
-/// A very basic parser that does minimal validation
-/// and extracts coefficients without enforcing strict format rules
-fn no_complexity_parser(equation: []const u8) ![11]f64 {
-    // Placeholder for No Complexity parser implementation
-    _ = equation;
-    return error.NotImplemented;
-}
+/// A very permissive parser
+/// Does not handle Superscript symbols or complex numbers
+fn last_boss_parser(equation: []const u8) ![11]f64 {
+    const parsed = try helpers.remove_whitespace(equation, allocator);
 
-/// Basically no_complexity_parser but allows multiple number of the same degree
-/// and simplifies them by summing their coefficients
-fn simplifier_parser(equation: []const u8) ![11]f64 {
-    // Placeholder for Simplifier parser implementation
-    _ = equation;
-    return error.NotImplemented;
+    std.debug.print("Last boss parser activated. Parsed equation: {s}\n", .{parsed});
+
+    for (parsed, 0..) |c, i| {
+        if (!helpers.is_equation_char(c, "x²")) {
+            helpers.printInvalidCharError(parsed, i, c);
+            return error.InvalidCharacter;
+        }
+    }
+
+    // The parser should parse anything excluding UTF-8 invalid characters
+    for (parsed, 0..) |c, i| {
+        _ = c; // Just to avoid unused variable warning
+        _ = i;
+    }
+
+    return [11]f64{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // Dummy return
 }
 
 /// Strictly parse the command-line arguments to extract polynomial coefficients
@@ -35,7 +41,7 @@ fn strict_parser(equation: []const u8) ![11]f64 {
 
     // Check for invalid characters
     for (parsed, 0..) |c, i| {
-        if (!helpers.is_equation_char(c)) {
+        if (!helpers.is_equation_char(c, null)) {
             helpers.printInvalidCharError(parsed, i, c);
             return error.InvalidCharacter;
         }

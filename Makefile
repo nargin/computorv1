@@ -1,19 +1,11 @@
 .PHONY: all build clean run test help visualize venv
+.DEFAULT_GOAL := help
 
-all: build
-
-# Build the Zig project
-build:
-	zig build
 
 # Clean build artifacts
 clean:
-	zig build clean
 	rm -rf .zig-cache
-
-# Run tests
-test: build
-	zig build test
+	rm computor
 
 # Setup virtual environment for visualization
 venv:
@@ -27,14 +19,8 @@ bonus: venv
 # Help message
 help:
 	@echo "Available targets:"
-	@echo "  make build              - Build the Zig project"
 	@echo "  make clean              - Clean build artifacts"
-	@echo "  make run ARGS=\"eq\"      - Run solver with equation"
-	@echo "  make test               - Run tests"
 	@echo "  make venv               - Setup Python virtual environment"
 	@echo "  make bonus ARGS=\"a b c\" - Run Python visualization with coefficients"
 	@echo "  make help               - Show this help message"
 	@echo ""
-	@echo "Examples:"
-	@echo "  make run ARGS=\"5 * X^0 + 4 * X^1 - 9.3 * X^2 = 1 * X^0\""
-	@echo "  make bonus ARGS=\"-9.3 4 5\""
