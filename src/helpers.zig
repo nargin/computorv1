@@ -45,7 +45,7 @@ pub fn remove_whitespace(s: []const u8, allocator: std.mem.Allocator) ![]const u
 pub fn clean_input(s: []const u8, allocator: std.mem.Allocator) ![]const u8 {
     var validc: usize = 0;
     for (s) |c| {
-        if (is_equation_char(c, "x²") and !is_whitespace(c)) {
+        if (is_equation_char(c, "x²¹") and !is_whitespace(c)) {
             validc += 1;
         }
     }
@@ -55,19 +55,17 @@ pub fn clean_input(s: []const u8, allocator: std.mem.Allocator) ![]const u8 {
     var cleaned = try allocator.alloc(u8, validc + 1);
     var index: usize = 0;
     for (s) |c| {
-        if (!is_whitespace(c) and is_equation_char(c, "x²")) {
+        if (!is_whitespace(c) and is_equation_char(c, "x²¹")) {
             cleaned[index] = c;
             index += 1;
         }
     }
-    cleaned[index] = 0; // Null-terminate for safety
-
-    if (index != validc and cleaned.len != validc) {
+    if (index != validc) {
         // Sanity check
         return error.InternalError;
     }
 
-    return cleaned;
+    return cleaned[0..validc];
 }
 
 // Error display functions

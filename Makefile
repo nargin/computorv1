@@ -1,11 +1,12 @@
 .PHONY: all build clean run test help visualize venv
 .DEFAULT_GOAL := help
-
-
+.SILENT: clean
 # Clean build artifacts
 clean:
-	rm -rf .zig-cache
-	rm computor
+	@rm -rf .zig-cache
+	@rm -rf venv
+	@rm computor 2>/dev/null || true
+	@rm graph.png 2>/dev/null || true
 
 # Setup virtual environment for visualization
 venv:

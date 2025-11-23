@@ -12,22 +12,126 @@ pub fn parser(parser_type: ParserType, equation: []const u8) ![11]f64 {
 }
 
 /// A very permissive parser
+/// Does not support parentheses
+/// Returning 11 coefficients but only 3 will be populated for degrees 0 to 2
 fn final_boss_parser(equation: []const u8) ![11]f64 {
     const parsed = try helpers.clean_input(equation, allocator);
 
-    std.debug.print("Ultra parser output (not implemented): {s}\n", .{parsed});
-
     const parts = try split_equation(parsed);
 
-    _ = parts;
+    var coefficients = [11]f64{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-    // The parser should parse anything excluding UTF-8 invalid characters
-    for (parsed, 0..) |c, i| {
-        _ = c; // Just to avoid unused variable warning
-        _ = i;
+    try parse_flexible_expression(parts.left, &coefficients);
+
+    if (parts.right.len > 0 and !std.mem.eql(u8, parts.right, "0")) {
+        var right_coefficients = [11]f64{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+        try parse_flexible_expression(parts.right, &right_coefficients);
+
+        for (0..11) |i| {
+            coefficients[i] -= right_coefficients[i];
+        }
     }
 
-    return [11]f64{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; // Dummy return
+    return coefficients;
+}
+
+/// Parse a flexible expression and extract coefficients
+/// Handles formats like: "5x^2+3x+1", "x²+3x-2", etc.
+fn parse_flexible_expression(expression: []const u8, coefficients: *[11]f64) !void {
+    var i: usize = 0;
+    const len = expression.len;
+
+    while (i < len) {
+        var sign: f64 = 1.0;
+
+        if (i < len and (expression[i] == '+' or expression[i] == '-')) {
+            if (expression[i] == '-') {
+                sign = -1.0;
+            }
+            i += 1;
+        }
+
+        if (i >= len) break;
+
+        // Parse coefficient (optional)
+        var coefficient: f64 = 1.0;
+        const coeff_start = i;
+
+        if (helpers.is_number(expression[i]) or expression[i] == '.') {
+            while (i < len and (helpers.is_number(expression[i]) or expression[i] == '.')) {
+                i += 1;
+            }
+            const coeff_str = expression[coeff_start..i];
+            coefficient = std.fmt.parseFloat(f64, coeff_str) catch {
+                return error.InvalidFormat;
+            };
+        }
+
+        // Skip optional '*'
+        if (i < len and expression[i] == '*') {
+            i += 1;
+        }
+
+        // Parse variable and exponent
+        var exponent: usize = 0;
+        if (i < len and (expression[i] == 'X' or expression[i] == 'x')) {
+            i += 1;
+            exponent = 1; // Default exponent if not specified
+
+            // Check for exponent notation: ^number or unicode superscript
+            if (i < len and expression[i] == '^') {
+                i += 1;
+
+                const exp_start = i;
+                while (i < len and helpers.is_number(expression[i])) {
+                    i += 1;
+                }
+
+                if (exp_start < i) {
+                    const exp_str = expression[exp_start..i];
+                    exponent = std.fmt.parseInt(usize, exp_str, 10) catch {
+                        return error.InvalidFormat;
+                    };
+                }
+            } else if (i < len and expression[i] == 0xC2) {
+                // 0xC2 exponent marker
+                // Handle UTF-8 encoded superscript digits (² = 0xC2 0xB2, ¹ = 0xC2 0xB9)
+                if (i + 1 < len) {
+                    const next_byte = expression[i + 1];
+                    if (next_byte == 0xB2) {
+                        exponent = 2;
+                        i += 2;
+                    } else if (next_byte == 0xB9) {
+                        exponent = 1;
+                        i += 2;
+                    }
+                }
+            } else if (i < len and helpers.is_number(expression[i])) {
+                // Directly following number as exponent (e.g., x2)
+                const exp_start = i;
+                while (i < len and helpers.is_number(expression[i])) {
+                    i += 1;
+                }
+                const exp_str = expression[exp_start..i];
+                exponent = std.fmt.parseInt(usize, exp_str, 10) catch {
+                    return error.InvalidFormat;
+                };
+            }
+        } else if (coeff_start == i) {
+            // We have neither coefficient nor variable - this is an error
+            return error.InvalidFormat;
+        } else {
+            // We have a coefficient but no variable - this is a constant term (X^0)
+            exponent = 0;
+        }
+
+        if (exponent > 10) {
+            return error.ExponentTooHigh;
+        }
+
+        coefficient *= sign;
+        coefficients[exponent] += coefficient;
+    }
 }
 
 const EquationParts = struct {

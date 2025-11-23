@@ -39,9 +39,15 @@ pub fn main() !void {
         return err;
     };
 
-    _ = coefficients;
-    // try quadratic_solver(coefficients);
+    // _ = coefficients;
+
+    // for (coefficients) |coef| {
+    //     std.debug.print("{d} ", .{coef});
+    // }
+    // std.debug.print("\n", .{});
+
+    try quadratic_solver(coefficients);
 
     // Generate visualization
-    // try visualizer.generate_visualization(coefficients, allocator);
+    try visualizer.generate_visualization(coefficients, allocator);
 }

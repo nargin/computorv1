@@ -64,3 +64,64 @@ test "parsing equations" {
 
     try expect(true);
 }
+
+test "parsing equations with ultra parser (flexible)" {
+    std.debug.print("\n\n=== ULTRA PARSER FLEXIBLE FORMAT TESTS ===\n\n", .{});
+
+    // Good flexible equations - should parse successfully with Ultra parser
+    const good_flexible_equations = [_][]const u8{
+        "x^2 + 3x + 2 = 0", // lowercase x
+        "x² + 3x¹ + 2 = 0", // unicode superscripts
+        "x² + 3x + 2 = 0", // mixed unicode and regular
+        "5x^2 + 3x - 1 = 0", // implicit multiplication
+        "5x² + 3x¹ - 1 = 0", // unicode with implicit multiplication
+        "X^2 - 4 = 0", // implicit coefficient (1)
+        "x^2 = 4", // implicit coefficient (1)
+        "2x^2 + x - 3 = 0", // mixed implicit and explicit
+        "x + 1 = 0", // linear with implicit coeff
+        "x² = 16", // unicode superscript quadratic
+        "-x^2 + 4 = 0", // negative leading coefficient
+        "x^2 + x + 1 = 0", // all implicit coefficients
+        "5.5x^2 - 2.3x + 1.1 = 0", // decimal coefficients with implicit multiply
+    };
+
+    std.debug.print("=== GOOD FLEXIBLE EQUATIONS (Ultra parser) ===\n\n", .{});
+    for (good_flexible_equations, 0..) |eq, i| {
+        std.debug.print("Ultra Test {d}: {s}\n", .{ i + 1, eq });
+        const coefficients = parser(.Ultra, eq) catch |err| {
+            std.debug.print("  FAIL Unexpected Error: {}\n", .{err});
+            continue;
+        };
+        std.debug.print("  OK Parsed successfully\n", .{});
+        try quadratic_solver(coefficients);
+        std.debug.print("\n", .{});
+    }
+
+    try expect(true);
+}
+
+test "parsing equations with direct number exponent format" {
+    std.debug.print("\n\n=== DIRECT NUMBER EXPONENT FORMAT TESTS ===\n\n", .{});
+
+    // Equations with direct number exponents (e.g., x2, 5x2, etc.)
+    const direct_exponent_equations = [_][]const u8{
+        "x2 + 3x + 2 = 0", // direct number exponent
+        "5x2 + x - 1 = 0", // coefficient with direct exponent
+        "x2 = 4", // simple quadratic with direct exponent
+        "2x2 - 8 = 0", // direct exponent format
+    };
+
+    std.debug.print("=== DIRECT NUMBER EXPONENT FORMAT ===\n\n", .{});
+    for (direct_exponent_equations, 0..) |eq, i| {
+        std.debug.print("Direct Test {d}: {s}\n", .{ i + 1, eq });
+        const coefficients = parser(.Ultra, eq) catch |err| {
+            std.debug.print("  FAIL Unexpected Error: {}\n", .{err});
+            continue;
+        };
+        std.debug.print("  OK Parsed successfully\n", .{});
+        try quadratic_solver(coefficients);
+        std.debug.print("\n", .{});
+    }
+
+    try expect(true);
+}
