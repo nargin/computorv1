@@ -104,11 +104,20 @@ pub fn quadratic_solver(coefficients: [11]f64) !void {
     if (is_approximately_zero(a)) {
         std.debug.print("Step 2: Solve linear equation (bx + c = 0)\n", .{});
         std.debug.print("  {d} * x + {d} = 0\n", .{ b, c });
-        std.debug.print("  {d} * x = {d}\n", .{ b, -c });
+
+        // Avoid displaying -0
+        const neg_c = if (is_approximately_zero(c)) 0 else -c;
+        std.debug.print("  {d} * x = {d}\n", .{ b, neg_c });
+
         const solution = -c / b;
-        std.debug.print("  x = {d} / {d}\n", .{ -c, b });
-        std.debug.print("  x = {d:.6}\n\n", .{solution});
-        std.debug.print("The solution is: x = {d:.6}\n", .{solution});
+        std.debug.print("  x = {d} / {d}\n", .{ neg_c, b });
+
+        const display_solution = if (is_approximately_zero(solution)) 0 else solution;
+        std.debug.print("  x = {d:.6}\n\n", .{display_solution});
+
+        std.debug.print("The solution is: x = ", .{});
+        format_real_fraction(solution);
+        std.debug.print("\n", .{});
         return;
     }
 
@@ -144,18 +153,25 @@ pub fn quadratic_solver(coefficients: [11]f64) !void {
 }
 
 fn display_end_result(discriminant: f64, root1: f64, root2: f64) void {
-    const fRoot1 = formatted_coeff(root1);
-    const fRoot2 = formatted_coeff(root2);
-
     if (discriminant > helpers.EPSILON) {
         std.debug.print("Discriminant is strictly positive, the two solutions are:\n", .{});
-        std.debug.print("x1 = {d} and x2 = {d}\n", .{ fRoot1, fRoot2 });
+        std.debug.print("x1 = ", .{});
+        format_real_fraction(root1);
+        std.debug.print(" and x2 = ", .{});
+        format_real_fraction(root2);
+        std.debug.print("\n", .{});
     } else if (approximately_equal(discriminant, 0)) {
         std.debug.print("Discriminant is zero, the solution is:\n", .{});
-        std.debug.print("x1 = x2 = {d}\n", .{fRoot1});
+        std.debug.print("x1 = x2 = ", .{});
+        format_real_fraction(root1);
+        std.debug.print("\n", .{});
     } else {
         std.debug.print("Discriminant is strictly negative, the two complex solutions are:\n", .{});
-        std.debug.print("x1 = {d} + {d}i and x2 = {d} - {d}i\n", .{ fRoot1, fRoot2, fRoot1, fRoot2 });
+        std.debug.print("x1 = ", .{});
+        format_complex_fraction(root1, root2);
+        std.debug.print(" and x2 = ", .{});
+        format_complex_fraction(root1, -root2);
+        std.debug.print("\n", .{});
     }
 }
 
@@ -164,14 +180,131 @@ fn formatted_coeff(value: f64) f64 {
     return @as(f64, @round(value * 1000000)) / 1000000;
 }
 
-fn decimal_to_fraction(value: f64) void {
-    // len = number of digits after decimal point
-    var len: usize = 0;
-    var temp = value;
-    while (temp != @as(f64, @round(temp))) : (len += 1) {
-        temp *= 10;
+// https://en.wikipedia.org/wiki/Greatest_common_divisor#Euclidean_algorithm
+fn gcd(a: i64, b: u64) u64 {
+    const abs_a = @as(u64, @intCast(@abs(a)));
+    if (b == 0) return abs_a;
+    if (abs_a == 0) return b;
+    return gcd_impl(abs_a, b);
+}
+
+fn gcd_impl(a: u64, b: u64) u64 {
+    if (b == 0) return a;
+    return gcd_impl(b, a % b);
+}
+
+fn decimal_to_fraction(value: f64) struct { numerator: i64, denominator: u64 } {
+    const is_negative = value < 0;
+    const abs_value = @abs(value);
+
+    // Check if it's effectively a whole number
+    const rounded = @round(abs_value);
+    if (@abs(abs_value - rounded) < helpers.EPSILON) {
+        const int_val = @as(i64, @intFromFloat(rounded));
+        return .{ .numerator = if (is_negative) -int_val else int_val, .denominator = 1 };
     }
 
-    const denominator = std.math.pow(10, len);
-    _ = denominator;
+    // Convert using fixed decimal places (up to 6)
+    // This handles most practical cases without precision issues
+    var decimal_places: u32 = 0;
+    var scaled = abs_value;
+    const max_places = 6;
+
+    while (decimal_places < max_places) {
+        scaled *= 10;
+        const scaled_int = @as(i64, @intFromFloat(scaled));
+        const diff = scaled - @as(f64, @floatFromInt(scaled_int));
+        decimal_places += 1;
+
+        // If we've got a good integer approximation, stop
+        if (@abs(diff) < helpers.EPSILON) {
+            break;
+        }
+    }
+
+    // Create fraction
+    const power_of_10 = std.math.pow(f64, 10.0, @as(f64, @floatFromInt(decimal_places)));
+    var numerator = @as(i64, @intFromFloat(abs_value * power_of_10));
+    var denominator = @as(u64, @intFromFloat(power_of_10));
+
+    // Reduce using GCD
+    const common = gcd(numerator, denominator);
+    numerator = @divExact(numerator, @as(i64, @intCast(common)));
+    denominator /= common;
+
+    if (is_negative) numerator = -numerator;
+
+    return .{ .numerator = numerator, .denominator = denominator };
+}
+
+/// Format and print a single fraction (only if it's a "clean" fraction)
+fn format_real_fraction(value: f64) void {
+    var val = value;
+    if (is_approximately_zero(val)) val = 0;
+
+    const frac = decimal_to_fraction(val);
+
+    // Only show fraction if denominator is reasonable (max 100)
+    // If denominator > 100, it's likely an irrational number, so show as decimal instead
+    if (frac.denominator == 1) {
+        // Handle -0 case: always show 0, never -0
+        if (frac.numerator == 0) {
+            std.debug.print("0", .{});
+        } else {
+            std.debug.print("{d}", .{frac.numerator});
+        }
+    } else if (frac.denominator <= 100) {
+        std.debug.print("{d}/{d}", .{ frac.numerator, frac.denominator });
+    } else {
+        // For irrational or very small decimals, show decimal (avoid -0)
+        const display_val = if (is_approximately_zero(val)) 0 else val;
+        std.debug.print("{d:.6}", .{display_val});
+    }
+}
+
+/// Format and print complex solution with fractions (real + imaginary)
+fn format_complex_fraction(real: f64, imag: f64) void {
+    var real_val = real;
+    var imag_val = imag;
+
+    if (is_approximately_zero(real_val)) real_val = 0;
+    if (is_approximately_zero(imag_val)) imag_val = 0;
+
+    const real_frac = decimal_to_fraction(real_val);
+    const imag_frac = decimal_to_fraction(imag_val);
+
+    // Display real part
+    if (real_frac.denominator == 1) {
+        if (real_frac.numerator == 0) {
+            std.debug.print("0", .{});
+        } else {
+            std.debug.print("{d}", .{real_frac.numerator});
+        }
+    } else if (real_frac.denominator <= 100) {
+        std.debug.print("{d}/{d}", .{ real_frac.numerator, real_frac.denominator });
+    } else {
+        const display_real = if (is_approximately_zero(real_val)) 0 else real_val;
+        std.debug.print("{d:.6}", .{display_real});
+    }
+
+    // Display imaginary part with sign
+    if (imag_frac.numerator >= 0) {
+        std.debug.print(" + ", .{});
+    } else {
+        std.debug.print(" - ", .{});
+    }
+
+    if (imag_frac.denominator == 1) {
+        const abs_imag = @abs(imag_frac.numerator);
+        if (abs_imag == 0) {
+            std.debug.print("0i", .{});
+        } else {
+            std.debug.print("{d}i", .{abs_imag});
+        }
+    } else if (imag_frac.denominator <= 100) {
+        std.debug.print("{d}i/{d}", .{ @abs(imag_frac.numerator), imag_frac.denominator });
+    } else {
+        const display_imag = if (is_approximately_zero(imag_val)) 0 else @abs(imag_val);
+        std.debug.print("{d:.6}i", .{display_imag});
+    }
 }
