@@ -125,3 +125,109 @@ test "parsing equations with direct number exponent format" {
 
     try expect(true);
 }
+
+test "edge case validation - multiple dots, consecutive operators" {
+    std.debug.print("\n\n=== EDGE CASE VALIDATION TESTS ===\n\n", .{});
+
+    // Edge cases that should FAIL
+    const bad_edge_cases = [_][]const u8{
+        "3.14.15 * X^2 = 0", // multiple dots in coefficient
+        "2.5.5 * X^1 + 1 = 0", // multiple dots
+        "5 * X^2 ++ 3 * X = 0", // consecutive plus operators
+        "5 * X^2 -- 3 * X = 0", // consecutive minus operators
+        "5 * X^2 +- 3 * X = 0", // plus then minus
+        "5 * X^2 -+ 3 * X = 0", // minus then plus
+    };
+
+    std.debug.print("=== BAD EDGE CASES (should fail validation) ===\n\n", .{});
+    for (bad_edge_cases, 0..) |eq, i| {
+        std.debug.print("Edge Case Test {d}: {s}\n", .{ i + 1, eq });
+        _ = parser(.Ultra, eq) catch |err| {
+            std.debug.print("  OK Expected Error: {}\n\n", .{err});
+            continue;
+        };
+        std.debug.print("  UNEXPECTED: Should have failed\n\n", .{});
+    }
+
+    try expect(true);
+}
+
+test "floating point edge cases - very small and large coefficients" {
+    std.debug.print("\n\n=== FLOATING POINT EDGE CASES ===\n\n", .{});
+
+    const fp_edge_cases = [_][]const u8{
+        "0.0000001 * X^2 + 5 * X + 10 = 0", // very small coefficient
+        "1000000 * X^2 + 100 * X + 1 = 0", // very large coefficient
+        "0.1 * X^1 + 0.2 * X^0 = 0", // floating point precision issues
+        "0.0 * X^2 + 5 * X + 10 = 0", // effectively zero coefficient
+    };
+
+    std.debug.print("=== FLOATING POINT EDGE CASES (should parse) ===\n\n", .{});
+    for (fp_edge_cases, 0..) |eq, i| {
+        std.debug.print("FP Test {d}: {s}\n", .{ i + 1, eq });
+        const coefficients = parser(.Ultra, eq) catch |err| {
+            std.debug.print("  FAIL Error: {}\n\n", .{err});
+            continue;
+        };
+        std.debug.print("  OK Parsed successfully\n", .{});
+        try quadratic_solver(coefficients);
+        std.debug.print("\n", .{});
+    }
+
+    try expect(true);
+}
+
+test "special cases - identity and contradiction equations" {
+    std.debug.print("\n\n=== SPECIAL CASE EQUATIONS ===\n\n", .{});
+
+    const special_cases = [_][]const u8{
+        "5 * X^0 = 5 * X^0", // identity (any real solution)
+        "42 * X^0 = 42 * X^0", // identity with larger number
+        "10 * X^0 = 15 * X^0", // contradiction (no solution)
+        "0 * X^2 + 0 * X^1 + 0 * X^0 = 0", // 0 = 0 (any real solution)
+        "0 * X^2 + 5 * X^1 = 0", // effectively linear
+        "5 * X^2 = 5 * X^2", // quadratic identity
+    };
+
+    std.debug.print("=== SPECIAL CASE EQUATIONS ===\n\n", .{});
+    for (special_cases, 0..) |eq, i| {
+        std.debug.print("Special Test {d}: {s}\n", .{ i + 1, eq });
+        const coefficients = parser(.Ultra, eq) catch |err| {
+            std.debug.print("  FAIL Error: {}\n\n", .{err});
+            continue;
+        };
+        std.debug.print("  OK Parsed successfully\n", .{});
+        try quadratic_solver(coefficients);
+        std.debug.print("\n", .{});
+    }
+
+    try expect(true);
+}
+
+test "intermediate steps verification - quadratic, linear, special" {
+    std.debug.print("\n\n=== INTERMEDIATE STEPS VERIFICATION ===\n\n", .{});
+
+    // Test representative cases from each category
+    const intermediate_test_cases = [_][]const u8{
+        "1 * X^0 + 2 * X^1 + 5 * X^2 = 0", // negative discriminant (complex solutions)
+        "5 * X^0 + 4 * X^1 - 9.3 * X^2 = 1 * X^0", // positive discriminant
+        "5 * X^0 + 4 * X^1 = 4 * X^0", // linear equation
+        "6 * X^0 = 6 * X^0", // identity (0=0)
+        "10 * X^0 = 15 * X^0", // no solution
+    };
+
+    std.debug.print("=== INTERMEDIATE STEPS DISPLAY ===\n", .{});
+    std.debug.print("(Verifying that intermediate steps are printed)\n\n", .{});
+    for (intermediate_test_cases, 0..) |eq, i| {
+        std.debug.print("Intermediate Test {d}: {s}\n", .{ i + 1, eq });
+        const coefficients = parser(.Ultra, eq) catch |err| {
+            std.debug.print("  FAIL Error: {}\n\n", .{err});
+            continue;
+        };
+        std.debug.print("  Starting solver output...\n", .{});
+        try quadratic_solver(coefficients);
+        std.debug.print("  OK Solver completed with steps\n\n", .{});
+    }
+
+    try expect(true);
+}

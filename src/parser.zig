@@ -62,6 +62,12 @@ fn parse_flexible_expression(expression: []const u8, coefficients: *[11]f64) !vo
                 i += 1;
             }
             const coeff_str = expression[coeff_start..i];
+
+            if (helpers.has_multiple_dots(coeff_str)) {
+                std.debug.print("Error: Invalid coefficient '{s}' (multiple decimal points)\n", .{coeff_str});
+                return error.InvalidFormat;
+            }
+
             coefficient = std.fmt.parseFloat(f64, coeff_str) catch {
                 return error.InvalidFormat;
             };
@@ -219,6 +225,12 @@ fn extract_coefficients(part: []const u8, coefficients: *[11]f64) !void {
         if (coeff_start != index) {
             is_coefficient = true;
             const coeff_str = part[coeff_start..index];
+
+            if (helpers.has_multiple_dots(coeff_str)) {
+                std.debug.print("Error: Invalid coefficient '{s}' (multiple decimal points)\n", .{coeff_str});
+                return error.InvalidFormat;
+            }
+
             coefficient = try std.fmt.parseFloat(f64, coeff_str);
         }
         coefficient *= @as(f64, sign);

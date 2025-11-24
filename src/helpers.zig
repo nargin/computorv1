@@ -1,5 +1,11 @@
 const std = @import("std");
 
+/// Epsilon for floating point comparison
+pub const EPSILON: f64 = 1e-9;
+
+/// Maximum input length to prevent buffer overflow
+pub const MAX_INPUT_LENGTH: usize = 1000;
+
 pub fn is_equation_char(c: u8, could_also: ?[]const u8) bool {
     if (could_also) |extra| {
         for (extra) |ec| if (c == ec) return true;
@@ -23,6 +29,31 @@ pub fn is_valid_coeff(c: u8) bool {
     return is_number(c) or (c == '.');
 }
 
+/// Check if a coefficient string has multiple dots
+pub fn has_multiple_dots(coeff_str: []const u8) bool {
+    var dot_count: usize = 0;
+    for (coeff_str) |c| {
+        if (c == '.') {
+            dot_count += 1;
+            if (dot_count > 1) return true;
+        }
+    }
+    return false;
+}
+
+/// Check for consecutive operators (++, --, +-, -+)
+pub fn has_consecutive_operators(s: []const u8) bool {
+    var i: usize = 0;
+    while (i < s.len - 1) : (i += 1) {
+        const c = s[i];
+        const next = s[i + 1];
+        if ((c == '+' or c == '-') and (next == '+' or next == '-')) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // String utilities
 
 pub fn remove_whitespace(s: []const u8, allocator: std.mem.Allocator) ![]const u8 {
@@ -43,6 +74,18 @@ pub fn remove_whitespace(s: []const u8, allocator: std.mem.Allocator) ![]const u
 /// Will remain permissive only
 /// Not really optimized but works
 pub fn clean_input(s: []const u8, allocator: std.mem.Allocator) ![]const u8 {
+    // Check input length to prevent buffer overflow
+    if (s.len > MAX_INPUT_LENGTH) {
+        std.debug.print("Error: Input too long (max {d} characters)\n", .{MAX_INPUT_LENGTH});
+        return error.InputTooLong;
+    }
+
+    // Check for consecutive operators
+    if (has_consecutive_operators(s)) {
+        std.debug.print("Error: Invalid operator sequence (++ or -- or +- or -+)\n", .{});
+        return error.InvalidOperatorSequence;
+    }
+
     var validc: usize = 0;
     for (s) |c| {
         if (is_equation_char(c, "x²¹") and !is_whitespace(c)) {

@@ -1,10 +1,21 @@
 const std = @import("std");
+const helpers = @import("helpers.zig");
+
+/// Check if a float is approximately zero
+fn is_approximately_zero(value: f64) bool {
+    return @abs(value) < helpers.EPSILON;
+}
+
+/// Check if two floats are approximately equal
+fn approximately_equal(a: f64, b: f64) bool {
+    return @abs(a - b) < helpers.EPSILON;
+}
 
 /// Determine the polynomial degree (highest non-zero coefficient)
 fn get_polynomial_degree(coefficients: [11]f64) usize {
     var degree: usize = 0;
     for (coefficients, 0..) |coeff, i| {
-        if (coeff != 0) {
+        if (!is_approximately_zero(coeff)) {
             degree = i;
         }
     }
@@ -18,13 +29,13 @@ fn print_reduced_form(coefficients: [11]f64) void {
     // Find the highest degree
     var max_degree: usize = 0;
     for (coefficients, 0..) |coeff, i| {
-        if (coeff != 0) {
+        if (!is_approximately_zero(coeff)) {
             max_degree = i;
         }
     }
 
     // If all coefficients are zero, just print 0
-    if (max_degree == 0 and coefficients[0] == 0) {
+    if (max_degree == 0 and is_approximately_zero(coefficients[0])) {
         std.debug.print("0 * X^0 = 0\n", .{});
         return;
     }
@@ -69,21 +80,35 @@ pub fn quadratic_solver(coefficients: [11]f64) !void {
     const b = coefficients[1];
     const c = coefficients[0];
 
+    // Show intermediate steps
+    std.debug.print("\n--- Intermediate Steps ---\n", .{});
+    std.debug.print("Step 1: Identify coefficients\n", .{});
+    std.debug.print("  a = {d}, b = {d}, c = {d}\n\n", .{ a, b, c });
+
     // Degree 0 or lower
-    if (a == 0 and b == 0 and c == 0) {
+    if (is_approximately_zero(a) and is_approximately_zero(b) and is_approximately_zero(c)) {
+        std.debug.print("Step 2: Analyze constant equation\n", .{});
+        std.debug.print("  Equation is 0 = 0 (always true)\n", .{});
         std.debug.print("Any real number is a solution.\n", .{});
         return;
     }
 
-    if (a == 0 and b == 0) {
+    if (is_approximately_zero(a) and is_approximately_zero(b)) {
+        std.debug.print("Step 2: Analyze constant equation\n", .{});
+        std.debug.print("  Equation is {d} = 0 (contradiction)\n", .{c});
         std.debug.print("No solution.\n", .{});
         return;
     }
 
     // Degree 1 (linear)
-    if (a == 0) {
-        const solution = -c / b; //
-        std.debug.print("The solution is: x = {d:.3}\n", .{solution});
+    if (is_approximately_zero(a)) {
+        std.debug.print("Step 2: Solve linear equation (bx + c = 0)\n", .{});
+        std.debug.print("  {d} * x + {d} = 0\n", .{ b, c });
+        std.debug.print("  {d} * x = {d}\n", .{ b, -c });
+        const solution = -c / b;
+        std.debug.print("  x = {d} / {d}\n", .{ -c, b });
+        std.debug.print("  x = {d:.6}\n\n", .{solution});
+        std.debug.print("The solution is: x = {d:.6}\n", .{solution});
         return;
     }
 
@@ -91,16 +116,29 @@ pub fn quadratic_solver(coefficients: [11]f64) !void {
     // https://en.wikipedia.org/wiki/Quadratic_equation
     const discriminant = b * b - 4 * a * c;
 
-    if (discriminant > 0) {
+    std.debug.print("Step 2: Calculate discriminant (Δ = b² - 4ac)\n", .{});
+    std.debug.print("  Δ = {d}² - 4({d})({d})\n", .{ b, a, c });
+    std.debug.print("  Δ = {d} - {d}\n", .{ b * b, 4 * a * c });
+    std.debug.print("  Δ = {d}\n\n", .{discriminant});
+
+    std.debug.print("Step 3: Apply quadratic formula (x = (-b ± √Δ) / 2a)\n", .{});
+
+    if (discriminant > helpers.EPSILON) {
+        std.debug.print("  x = (-{d} ± √{d}) / (2 * {d})\n", .{ b, discriminant, a });
         const root1 = (-b + std.math.sqrt(discriminant)) / (2 * a);
         const root2 = (-b - std.math.sqrt(discriminant)) / (2 * a);
+        std.debug.print("  x₁ = {d:.6}, x₂ = {d:.6}\n\n", .{ root1, root2 });
         display_end_result(discriminant, root1, root2);
-    } else if (discriminant == 0) {
+    } else if (approximately_equal(discriminant, 0)) {
+        std.debug.print("  x = (-{d}) / (2 * {d})\n", .{ b, a });
         const root = -b / (2 * a);
+        std.debug.print("  x = {d:.6}\n\n", .{root});
         display_end_result(discriminant, root, root);
     } else {
+        std.debug.print("  x = (-{d} ± √({d})) / (2 * {d})\n", .{ b, discriminant, a });
         const realPart = -b / (2 * a);
         const imagPart = std.math.sqrt(-discriminant) / (2 * a);
+        std.debug.print("  x = {d:.6} ± {d:.6}i\n\n", .{ realPart, imagPart });
         display_end_result(discriminant, realPart, imagPart);
     }
 }
@@ -109,10 +147,10 @@ fn display_end_result(discriminant: f64, root1: f64, root2: f64) void {
     const fRoot1 = formatted_coeff(root1);
     const fRoot2 = formatted_coeff(root2);
 
-    if (discriminant > 0) {
+    if (discriminant > helpers.EPSILON) {
         std.debug.print("Discriminant is strictly positive, the two solutions are:\n", .{});
         std.debug.print("x1 = {d} and x2 = {d}\n", .{ fRoot1, fRoot2 });
-    } else if (discriminant == 0) {
+    } else if (approximately_equal(discriminant, 0)) {
         std.debug.print("Discriminant is zero, the solution is:\n", .{});
         std.debug.print("x1 = x2 = {d}\n", .{fRoot1});
     } else {
@@ -122,9 +160,8 @@ fn display_end_result(discriminant: f64, root1: f64, root2: f64) void {
 }
 
 fn formatted_coeff(value: f64) f64 {
-    // Format to 3 decimal places
-    // return value;
-    return @as(f64, @round(value * 1000)) / 1000;
+    // Round to 6 decimal places for better precision
+    return @as(f64, @round(value * 1000000)) / 1000000;
 }
 
 fn decimal_to_fraction(value: f64) void {
