@@ -3,8 +3,6 @@ zig-out/
 *.o
 zig-bin/
 
-computor
-
 en.subject.pdf
 
 graph.png
